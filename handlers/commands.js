@@ -1,4 +1,7 @@
-// handlers/commands.js
+/**
+ * File: handlers/commands.js
+ * Description: Registers command handlers for the Telegram bot.
+ */
 
 const { showMainMenu } = require('../services/menu');
 const logger = require('../utils/logger');
@@ -6,14 +9,14 @@ const logger = require('../utils/logger');
 function registerCommands(bot) {
   bot.start(async (ctx) => {
     const telegramId = ctx.from.id;
-    logger.log(`[Start] Пользователь ID: ${telegramId} вызвал /start`);
+    logger.info(`[Start] User ID: ${telegramId} invoked /start`);
 
     try {
       ctx.session = {};
-      logger.log(`[Start] Состояние пользователя ID ${telegramId} сброшено`);
+      logger.info(`[Start] Session reset for user ID ${telegramId}`);
       await showMainMenu(ctx, true);
     } catch (error) {
-      logger.error(`[Start] Ошибка: ${error.message}`);
+      logger.error(`[Start] Error: ${error.message}`);
       await ctx.reply('❗ Произошла ошибка. Пожалуйста, попробуйте позже.');
     }
   });

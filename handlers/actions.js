@@ -1,51 +1,53 @@
-// handlers/actions.js
+/**
+ * File: handlers/actions.js
+ * Description: Contains action handlers for Telegram bot inline keyboard callbacks.
+ */
 
 const { showMyLocals, showMainMenu, showLocalOverview } = require('../services/menu');
 const { haiku } = require('../utils/name-generator');
-const db = require('../repositories/db'); 
+const db = require('../repositories/db');
 const logger = require('../utils/logger');
 const { Markup } = require('telegraf');
 const { createLocal, createLocalUser } = require('../services/localService');
 
 function registerActions(bot) {
-  // Обработчик подтверждения удаления локалки
+  // Handler for confirming the deletion of a local
   bot.action(/^confirm_delete_local_(\d+)$/, async (ctx) => {
     const localId = ctx.match[1];
     const telegramId = ctx.from.id;
-    logger.log(`[Action: confirm_delete_local_${localId}] Пользователь ID: ${telegramId} подтвердил удаление локалки ID ${localId}`);
+    logger.info(`[Action: confirm_delete_local_${localId}] User ID: ${telegramId} confirmed deletion of local ID ${localId}`);
 
     try {
       const user = await db.getUserByTelegramId(telegramId);
       if (!user) {
-        logger.log(`[confirm_delete_local_${localId}] Пользователь ID ${telegramId} не найден.`);
+        logger.info(`[confirm_delete_local_${localId}] User ID ${telegramId} not found.`);
         await ctx.answerCbQuery('❗ Пользователь не найден.', { show_alert: true });
         return;
       }
 
       await db.deleteLocal(localId, user.id);
-      logger.log(`[confirm_delete_local_${localId}] Локалка ID ${localId} удалена.`);
+      logger.info(`[confirm_delete_local_${localId}] Local ID ${localId} deleted.`);
 
       await ctx.editMessageText('🗑️ Локалка успешно удалена.', { parse_mode: 'Markdown' });
-      logger.log(`[confirm_delete_local_${localId}] Сообщение об успешном удалении отправлено.`);
+      logger.info(`[confirm_delete_local_${localId}] Deletion success message sent.`);
 
       await showMyLocals(ctx, true);
-      logger.log(`[confirm_delete_local_${localId}] Отправлен обновленный список локалок.`);
+      logger.info(`[confirm_delete_local_${localId}] Updated list of locals sent.`);
     } catch (error) {
-      logger.error(`[confirm_delete_local_${localId}] Ошибка: ${error.message}`);
+      logger.error(`[confirm_delete_local_${localId}] Error: ${error.message}`);
       const errorMessage = '❗ Произошла ошибка при удалении локалки. Пожалуйста, попробуйте позже.';
       await ctx.answerCbQuery(errorMessage, { show_alert: true });
     }
   });
 
-  // Обработчик кнопки "Удалить локалку"
+  // Handler for "Delete Local" button
   bot.action(/^delete_local_(\d+)$/, async (ctx) => {
     const localId = ctx.match[1];
     const telegramId = ctx.from.id;
-    logger.log(`[Action: delete_local_${localId}] Пользователь ID: ${telegramId} нажал кнопку "Удалить локалку" для локалки ID ${localId}`);
+    logger.info(`[Action: delete_local_${localId}] User ID: ${telegramId} pressed "Delete Local" for local ID ${localId}`);
 
     try {
       const confirmationText = `🗑️ *Вы действительно хотите удалить локалку со всеми пользователями?* Это действие нельзя отменить.`;
-      logger.log(`[Action: delete_local_${localId}] Отправка подтверждающего сообщения.`);
 
       const keyboard = Markup.inlineKeyboard([
         [Markup.button.callback('✅ Да, удалить', `confirm_delete_local_${localId}`)],
@@ -56,34 +58,33 @@ function registerActions(bot) {
         parse_mode: 'Markdown',
         ...keyboard,
       });
-      logger.log(`[Action: delete_local_${localId}] Подтверждающее сообщение отправлено.`);
+      logger.info(`[Action: delete_local_${localId}] Confirmation message sent.`);
     } catch (error) {
-      logger.error(`[Action: delete_local_${localId}] Ошибка: ${error.message}`);
+      logger.error(`[Action: delete_local_${localId}] Error: ${error.message}`);
       const errorMessage = '❗ Произошла ошибка. Пожалуйста, попробуйте позже.';
       await ctx.answerCbQuery(errorMessage, { show_alert: true });
     }
   });
 
-  // Обработчик кнопки "Создать пользователя"
+  // Handler for "Create User" button
   bot.action(/^add_user_(\d+)$/, async (ctx) => {
     const localId = ctx.match[1];
     const telegramId = ctx.from.id;
-    logger.log(`[Action: add_user_${localId}] Пользователь ID: ${telegramId} нажал кнопку "Создать пользователя" для локалки ID ${localId}`);
+    logger.info(`[Action: add_user_${localId}] User ID: ${telegramId} pressed "Create User" for local ID ${localId}`);
 
     try {
       const local = await db.getLocalByIdAndOwner(localId, telegramId);
       if (!local) {
-        logger.log(`[Action: add_user_${localId}] Локалка ID ${localId} не найдена или не принадлежит пользователю ID ${telegramId}`);
+        logger.info(`[Action: add_user_${localId}] Local ID ${localId} not found or access denied for user ID ${telegramId}`);
         await ctx.answerCbQuery('❗ Локалка не найдена или вы не имеете к ней доступа.', { show_alert: true });
         return;
       }
 
       ctx.session.state = 'awaiting_username';
       ctx.session.localId = localId;
-      logger.log(`[Action: add_user_${localId}] Устанавливаем состояние: awaiting_username`);
 
       const messageText = `👤 **Создание пользователя**
-      
+          
 Пожалуйста, введите имя пользователя для нового участника или нажмите "🔄 Пропустить", чтобы сгенерировать случайное имя.`;
 
       const keyboard = Markup.inlineKeyboard([
@@ -95,114 +96,111 @@ function registerActions(bot) {
         parse_mode: 'Markdown',
         ...keyboard,
       });
-      logger.log(`[Action: add_user_${localId}] Отправлено сообщение для ввода имени пользователя.`);
+      logger.info(`[Action: add_user_${localId}] Prompted for username input.`);
     } catch (error) {
-      logger.error(`[Action: add_user_${localId}] Ошибка: ${error.message}`);
+      logger.error(`[Action: add_user_${localId}] Error: ${error.message}`);
       await ctx.reply('❗ Произошла ошибка. Пожалуйста, попробуйте позже.');
     }
   });
 
-  // Обработчик генерации случайного имени пользователя
+  // Handler for generating a random username
   bot.action('generate_random_username', async (ctx) => {
     const telegramId = ctx.from.id;
-    logger.log(`[Action: generate_random_username] Пользователь ID: ${telegramId} нажал кнопку "Пропустить" для генерации случайного имени пользователя.`);
+    logger.info(`[Action: generate_random_username] User ID: ${telegramId} requested random username generation.`);
 
     try {
       const localId = ctx.session.localId;
       if (!localId) {
-        throw new Error('❗ Локалка не установлена в сессии.');
+        throw new Error('Local ID not set in session.');
       }
 
       const username = haiku();
-      logger.log(`[Action: generate_random_username] Сгенерировано имя пользователя: ${username}`);
+      logger.info(`[Action: generate_random_username] Generated username: ${username}`);
 
       await createLocalUser(ctx, username, `🎉 Пользователь "${username}" успешно создан.`);
-      logger.log(`[Action: generate_random_username] Пользователь "${username}" успешно создан.`);
+      logger.info(`[Action: generate_random_username] User "${username}" created successfully.`);
 
       ctx.session.state = null;
       ctx.session.localId = null;
-      logger.log(`[Action: generate_random_username] Состояние пользователя ID ${telegramId} сброшено.`);
     } catch (error) {
-      logger.error(`[Action: generate_random_username] Ошибка: ${error.message}`);
+      logger.error(`[Action: generate_random_username] Error: ${error.message}`);
       await ctx.reply('❗ Произошла ошибка при генерации имени пользователя.');
     }
   });
 
-  // Обработчик кнопки "Мои Локалки"
+  // Handler for "My Locals" button
   bot.action('my_locals', async (ctx) => {
     const telegramId = ctx.from.id;
-    logger.log(`[Action: my_locals] Пользователь ID: ${telegramId} нажал кнопку "Мои Локалки"`);
+    logger.info(`[Action: my_locals] User ID: ${telegramId} pressed "My Locals"`);
 
     try {
       await showMyLocals(ctx, true);
-      logger.log(`[Action: my_locals] Главное меню отправлено пользователю ID ${telegramId}`);
+      logger.info(`[Action: my_locals] Main menu sent to user ID ${telegramId}`);
     } catch (error) {
-      logger.error(`[Action: my_locals] Ошибка: ${error.message}`);
+      logger.error(`[Action: my_locals] Error: ${error.message}`);
       await ctx.reply('❗ Произошла ошибка. Пожалуйста, попробуйте позже.');
     }
   });
 
-  // Обработчик кнопки "Пополнить"
+  // Handler for "Top Up" button
   bot.action('top_up', async (ctx) => {
     const telegramId = ctx.from.id;
-    logger.log(`[Action: top_up] Пользователь ID: ${telegramId} нажал кнопку "Пополнить"`);
+    logger.info(`[Action: top_up] User ID: ${telegramId} pressed "Top Up"`);
 
     try {
       await ctx.answerCbQuery('💳 Функция пополнения баланса пока в разработке.', { show_alert: true });
-      logger.log(`[Action: top_up] Информирующее сообщение о разработке отправлено.`);
+      logger.info(`[Action: top_up] Informed user about feature in development.`);
     } catch (error) {
-      logger.error(`[Action: top_up] Ошибка: ${error.message}`);
+      logger.error(`[Action: top_up] Error: ${error.message}`);
       await ctx.reply('❗ Произошла ошибка. Пожалуйста, попробуйте позже.');
     }
   });
 
-  // Обработчик кнопки "Назад" к главному меню
+  // Handler for "Back to Main" button
   bot.action('back_to_main', async (ctx) => {
     const telegramId = ctx.from.id;
-    logger.log(`[Action: back_to_main] Пользователь ID: ${telegramId} нажал кнопку "Назад"`);
+    logger.info(`[Action: back_to_main] User ID: ${telegramId} pressed "Back"`);
 
     try {
       ctx.session.state = null;
       ctx.session.currentLocalId = null;
-      logger.log(`[Action: back_to_main] Состояние пользователя ID ${telegramId} сброшено.`);
+      logger.info(`[Action: back_to_main] Session state reset for user ID ${telegramId}`);
 
       await showMainMenu(ctx, false);
-      logger.log(`[Action: back_to_main] Главное меню отправлено пользователю ID ${telegramId}`);
+      logger.info(`[Action: back_to_main] Main menu sent to user ID ${telegramId}`);
     } catch (error) {
-      logger.error(`[Action: back_to_main] Ошибка: ${error.message}`);
+      logger.error(`[Action: back_to_main] Error: ${error.message}`);
       await ctx.reply('❗ Произошла ошибка. Пожалуйста, попробуйте позже.');
     }
   });
 
-  // Обработчик выбора конкретной локалки
+  // Handler for selecting a specific local
   bot.action(/^local_(\d+)$/, async (ctx) => {
     const localId = ctx.match[1];
     const telegramId = ctx.from.id;
-    logger.log(`[Action: local_${localId}] Пользователь ID: ${telegramId} выбрал локалку ID ${localId}`);
+    logger.info(`[Action: local_${localId}] User ID: ${telegramId} selected local ID ${localId}`);
 
     try {
       ctx.session.currentLocalId = localId;
-      logger.log(`[Action: local_${localId}] Устанавливаем currentLocalId: ${localId}`);
 
       await showLocalOverview(ctx, localId);
-      logger.log(`[Action: local_${localId}] Обзорная страница локалки отправлена.`);
+      logger.info(`[Action: local_${localId}] Local overview sent.`);
     } catch (error) {
-      logger.error(`[Action: local_${localId}] Ошибка: ${error.message}`);
+      logger.error(`[Action: local_${localId}] Error: ${error.message}`);
       await ctx.reply('❗ Произошла ошибка. Пожалуйста, попробуйте позже.');
     }
   });
 
-  // Обработчик кнопки "Создать Локалку"
+  // Handler for "Create Local" button
   bot.action('new_local', async (ctx) => {
     const telegramId = ctx.from.id;
-    logger.log(`[Action: new_local] Пользователь ID: ${telegramId} нажал кнопку "Создать Локалку"`);
+    logger.info(`[Action: new_local] User ID: ${telegramId} pressed "Create Local"`);
 
     try {
       ctx.session.state = 'awaiting_local_name';
-      logger.log(`[Action: new_local] Устанавливаем состояние: awaiting_local_name`);
 
       const messageText = `🆕 **Создание новой локалки**
-      
+          
 Пожалуйста, введите название для новой локалки или нажмите "🔄 Создать!", чтобы сгенерировать случайное название.`;
 
       const keyboard = Markup.inlineKeyboard([
@@ -214,29 +212,28 @@ function registerActions(bot) {
         parse_mode: 'Markdown',
         ...keyboard,
       });
-      logger.log(`[Action: new_local] Отправлено сообщение для создания новой локалки.`);
+      logger.info(`[Action: new_local] Prompted for local name input.`);
     } catch (error) {
-      logger.error(`[Action: new_local] Ошибка: ${error.message}`);
+      logger.error(`[Action: new_local] Error: ${error.message}`);
       await ctx.reply('❗ Произошла ошибка. Пожалуйста, попробуйте позже.');
     }
   });
 
-  // Обработчик генерации случайного названия локалки
+  // Handler for generating a random local name
   bot.action('generate_random_name', async (ctx) => {
     const telegramId = ctx.from.id;
-    logger.log(`[Action: generate_random_name] Пользователь ID: ${telegramId} нажал кнопку "Создать!" для генерации случайного названия локалки.`);
+    logger.info(`[Action: generate_random_name] User ID: ${telegramId} requested random local name generation.`);
 
     try {
       const localName = haiku();
-      logger.log(`[Action: generate_random_name] Сгенерировано название локалки: "${localName}"`);
+      logger.info(`[Action: generate_random_name] Generated local name: "${localName}"`);
 
       await createLocal(ctx, localName, `🎉 Локалка "${localName}" успешно создана.`);
-      logger.log(`[Action: generate_random_name] Локалка "${localName}" успешно создана.`);
+      logger.info(`[Action: generate_random_name] Local "${localName}" created successfully.`);
 
       ctx.session.state = null;
-      logger.log(`[Action: generate_random_name] Состояние пользователя ID ${telegramId} сброшено.`);
     } catch (error) {
-      logger.error(`[Action: generate_random_name] Ошибка: ${error.message}`);
+      logger.error(`[Action: generate_random_name] Error: ${error.message}`);
       await ctx.reply('❗ Произошла ошибка при генерации названия локалки.');
     }
   });

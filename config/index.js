@@ -1,4 +1,8 @@
-// config/index.js
+/**
+ * File: config/index.js
+ * Description: Loads environment variables and exports configuration settings.
+ */
+
 require('dotenv').config();
 
 module.exports = {

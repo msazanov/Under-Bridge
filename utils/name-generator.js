@@ -1,4 +1,7 @@
-// utils/name-generator.js
+/**
+ * File: utils/name-generator.js
+ * Description: Generates random names using a combination of adjectives and nouns.
+ */
 
 function haiku() {
   const adjectives = {
@@ -53,11 +56,11 @@ function haiku() {
     ]
   };
 
-  // Выбираем случайный род (мужской, женский или средний)
+  // Select a random gender
   const genderKeys = Object.keys(adjectives);
   const selectedGender = genderKeys[Math.floor(Math.random() * genderKeys.length)];
 
-  // Выбираем случайное прилагательное и существительное из выбранного рода
+  // Select random adjective and noun from the selected gender
   const adjective = adjectives[selectedGender][Math.floor(Math.random() * adjectives[selectedGender].length)];
   const noun = nouns[selectedGender][Math.floor(Math.random() * nouns[selectedGender].length)];
 

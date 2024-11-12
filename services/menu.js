@@ -1,4 +1,7 @@
-// services/menu.js
+/**
+ * File: services/menu.js
+ * Description: Provides functions to display various menus and overviews in the Telegram bot.
+ */
 
 const { Markup } = require('telegraf');
 const db = require('../repositories/db');
@@ -6,23 +9,23 @@ const logger = require('../utils/logger');
 
 async function showMainMenu(ctx, setMainMenuMessageId = false) {
   const telegramId = ctx.from.id;
-  logger.log(`[showMainMenu] Пользователь ID: ${telegramId} вызывает главное меню. setMainMenuMessageId: ${setMainMenuMessageId}`);
+  logger.info(`[showMainMenu] User ID: ${telegramId} is accessing the main menu.`);
 
   try {
     let user = await db.getUserByTelegramId(telegramId);
     if (!user) {
       const { first_name, last_name, username } = ctx.from;
-      logger.log(`[showMainMenu] Пользователь не найден. Добавляем нового пользователя: ${first_name} ${last_name}, Username: ${username}`);
+      logger.info(`[showMainMenu] User not found. Adding new user: ${first_name} ${last_name}, Username: ${username}`);
       user = await db.addUser(telegramId, first_name, last_name, username);
       await ctx.reply(`🎉 Добро пожаловать, ${first_name}! 🎉 Вы успешно зарегистрированы.`);
-      logger.log(`[showMainMenu] Новый пользователь добавлен: ID ${user.id}, Баланс ${user.balance}`);
+      logger.info(`[showMainMenu] New user added: ID ${user.id}, Balance ${user.balance}`);
     } else {
-      logger.log(`[showMainMenu] Пользователь найден: ID ${user.id}, Баланс ${user.balance}`);
+      logger.info(`[showMainMenu] User found: ID ${user.id}, Balance ${user.balance}`);
     }
 
     const locals = await db.getLocalsByOwnerId(user.id);
     const localsCount = locals.length;
-    logger.log(`[showMainMenu] Количество локалок у пользователя ID ${user.id}: ${localsCount}`);
+    logger.info(`[showMainMenu] User ID ${user.id} has ${localsCount} locals.`);
 
     const messageText = `✨ **Главное меню** ✨
 
@@ -37,16 +40,14 @@ async function showMainMenu(ctx, setMainMenuMessageId = false) {
     ]);
 
     if (setMainMenuMessageId) {
-      logger.log(`[showMainMenu] Отправляем новое главное меню пользователю ID ${telegramId}`);
       const sentMessage = await ctx.reply(messageText, {
         parse_mode: 'Markdown',
         ...keyboard,
       });
       ctx.session.mainMenuMessageId = sentMessage.message_id;
-      logger.log(`[showMainMenu] mainMenuMessageId установлен: ${sentMessage.message_id}`);
+      logger.info(`[showMainMenu] mainMenuMessageId set: ${sentMessage.message_id}`);
     } else {
       if (ctx.session.mainMenuMessageId) {
-        logger.log(`[showMainMenu] Редактируем главное меню сообщение ID ${ctx.session.mainMenuMessageId} для пользователя ID ${telegramId}`);
         await ctx.telegram.editMessageText(
           ctx.chat.id,
           ctx.session.mainMenuMessageId,
@@ -55,17 +56,16 @@ async function showMainMenu(ctx, setMainMenuMessageId = false) {
           { parse_mode: 'Markdown', ...keyboard }
         );
       } else {
-        logger.log(`[showMainMenu] mainMenuMessageId не установлен. Отправляем новое главное меню пользователю ID ${telegramId}`);
         const sentMessage = await ctx.reply(messageText, {
           parse_mode: 'Markdown',
           ...keyboard,
         });
         ctx.session.mainMenuMessageId = sentMessage.message_id;
-        logger.log(`[showMainMenu] mainMenuMessageId установлен: ${sentMessage.message_id}`);
+        logger.info(`[showMainMenu] mainMenuMessageId set: ${sentMessage.message_id}`);
       }
     }
   } catch (error) {
-    logger.error(`[showMainMenu] Ошибка: ${error.message}`);
+    logger.error(`[showMainMenu] Error: ${error.message}`);
     const errorMessage = '❗ Произошла ошибка. Пожалуйста, попробуйте позже.';
     if (ctx.callbackQuery) {
       await ctx.answerCbQuery(errorMessage, { show_alert: true });
@@ -77,19 +77,18 @@ async function showMainMenu(ctx, setMainMenuMessageId = false) {
 
 async function showMyLocals(ctx, setMainMenuMessageId = false) {
   const telegramId = ctx.from.id;
-  logger.log(`[showMyLocals] Пользователь ID: ${telegramId} вызывает список локалок. setMainMenuMessageId: ${setMainMenuMessageId}`);
+  logger.info(`[showMyLocals] User ID: ${telegramId} is requesting their locals.`);
 
   try {
     const user = await db.getUserByTelegramId(telegramId);
     if (!user) {
-      logger.log(`[showMyLocals] Пользователь ID ${telegramId} не найден.`);
+      logger.info(`[showMyLocals] User ID ${telegramId} not found.`);
       await ctx.reply('❗ Пользователь не найден. Пожалуйста, перезапустите бота.');
       return;
     }
-    logger.log(`[showMyLocals] ID пользователя: ${user.id}`);
 
     const locals = await db.getLocalsByOwnerId(user.id);
-    logger.log(`[showMyLocals] Найдено локалок у пользователя ID ${user.id}: ${locals.length}`);
+    logger.info(`[showMyLocals] Found ${locals.length} locals for user ID ${user.id}.`);
 
     if (locals.length === 0) {
       const messageText = '📭 У вас пока нет локалок.';
@@ -97,10 +96,8 @@ async function showMyLocals(ctx, setMainMenuMessageId = false) {
         [Markup.button.callback('➕ Создать Локалку', 'new_local')],
         [Markup.button.callback('🔙 Назад', 'back_to_main')],
       ]);
-      logger.log(`[showMyLocals] Отправляем сообщение о отсутствии локалок пользователю ID ${telegramId}`);
 
       if (setMainMenuMessageId && ctx.session.mainMenuMessageId) {
-        logger.log(`[showMyLocals] Редактируем главное меню сообщение ID ${ctx.session.mainMenuMessageId} для пользователя ID ${telegramId}`);
         await ctx.telegram.editMessageText(
           ctx.chat.id,
           ctx.session.mainMenuMessageId,
@@ -109,12 +106,10 @@ async function showMyLocals(ctx, setMainMenuMessageId = false) {
           { parse_mode: 'Markdown', ...keyboard }
         );
       } else {
-        logger.log(`[showMyLocals] Отправляем новое сообщение о локалках пользователю ID ${telegramId}`);
-        const sentMessage = await ctx.reply(messageText, {
+        await ctx.reply(messageText, {
           parse_mode: 'Markdown',
           ...keyboard,
         });
-        // Опционально: сохранить message_id
       }
     } else {
       const keyboardButtons = [];
@@ -137,10 +132,8 @@ async function showMyLocals(ctx, setMainMenuMessageId = false) {
       ]);
 
       const listMessage = '📂 **Ваши локалки:**';
-      logger.log(`[showMyLocals] Отправляем список локалок пользователю ID ${telegramId}`);
 
       if (setMainMenuMessageId && ctx.session.mainMenuMessageId) {
-        logger.log(`[showMyLocals] Редактируем главное меню сообщение ID ${ctx.session.mainMenuMessageId} для пользователя ID ${telegramId}`);
         await ctx.telegram.editMessageText(
           ctx.chat.id,
           ctx.session.mainMenuMessageId,
@@ -149,16 +142,14 @@ async function showMyLocals(ctx, setMainMenuMessageId = false) {
           { parse_mode: 'Markdown', ...Markup.inlineKeyboard(keyboardButtons) }
         );
       } else {
-        logger.log(`[showMyLocals] Отправляем новое сообщение со списком локалок пользователю ID ${telegramId}`);
-        const sentMessage = await ctx.reply(listMessage, {
+        await ctx.reply(listMessage, {
           parse_mode: 'Markdown',
           ...Markup.inlineKeyboard(keyboardButtons),
         });
-        // Опционально: сохранить message_id
       }
     }
   } catch (error) {
-    logger.error(`[showMyLocals] Ошибка: ${error.message}`);
+    logger.error(`[showMyLocals] Error: ${error.message}`);
     const errorMessage = '❗ Произошла ошибка при получении ваших локалок.';
     await ctx.answerCbQuery(errorMessage, { show_alert: true });
   }
@@ -166,21 +157,17 @@ async function showMyLocals(ctx, setMainMenuMessageId = false) {
 
 async function showLocalOverview(ctx, localId, motd = '') {
   const telegramId = ctx.from.id;
-  logger.log(`[showLocalOverview] Отображение обзора локалки ID ${localId} для пользователя ID ${telegramId}`);
+  logger.info(`[showLocalOverview] Displaying overview of local ID ${localId} for user ID ${telegramId}`);
 
   try {
     const local = await db.getLocalByIdAndOwner(localId, telegramId);
     if (!local) {
-      logger.log(`[showLocalOverview] Локалка ID ${localId} не найдена или не принадлежит пользователю ID ${telegramId}`);
+      logger.info(`[showLocalOverview] Local ID ${localId} not found or access denied for user ID ${telegramId}`);
       await ctx.answerCbQuery('❗ Локалка не найдена или вы не имеете к ней доступа.', { show_alert: true });
       return;
     }
 
-    logger.log(`[showLocalOverview] Локалка найдена: ${local.name} (${local.ip_network})`);
-
     const localUsers = await db.getLocalUsers(localId);
-    logger.log(`[showLocalOverview] Пользователей в локалке ID ${localId}: ${localUsers.length}`);
-
     let usersListText = '';
     if (localUsers.length > 0) {
       usersListText = '\n**👥 Пользователи:**\n';
@@ -203,14 +190,11 @@ async function showLocalOverview(ctx, localId, motd = '') {
     ]);
 
     if (ctx.callbackQuery && ctx.callbackQuery.message) {
-      const currentMessageId = ctx.callbackQuery.message.message_id;
-      logger.log(`[showLocalOverview] Редактируем сообщение ID ${currentMessageId} для отображения обзора локалки ID ${localId}`);
       await ctx.editMessageText(messageText, {
         parse_mode: 'Markdown',
         ...keyboard,
       });
     } else if (ctx.session.mainMenuMessageId) {
-      logger.log(`[showLocalOverview] Редактируем главное меню сообщение ID ${ctx.session.mainMenuMessageId} для отображения обзора локалки ID ${localId}`);
       await ctx.telegram.editMessageText(
         ctx.chat.id,
         ctx.session.mainMenuMessageId,
@@ -219,15 +203,13 @@ async function showLocalOverview(ctx, localId, motd = '') {
         { parse_mode: 'Markdown', ...keyboard }
       );
     } else {
-      logger.log(`[showLocalOverview] Отправляем новое сообщение для отображения обзора локалки ID ${localId}`);
-      const sentMessage = await ctx.reply(messageText, {
+      await ctx.reply(messageText, {
         parse_mode: 'Markdown',
         ...keyboard,
       });
-      // Опционально: сохранить message_id
     }
   } catch (error) {
-    logger.error(`[showLocalOverview] Ошибка: ${error.message}`);
+    logger.error(`[showLocalOverview] Error: ${error.message}`);
     const errorMessage = '❗ Произошла ошибка при отображении локалки.';
     if (ctx.callbackQuery) {
       await ctx.answerCbQuery(errorMessage, { show_alert: true });

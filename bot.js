@@ -1,4 +1,7 @@
-// bot.js
+/**
+ * File: bot.js
+ * Description: Main entry point for initializing and starting the Telegram bot.
+ */
 
 const { Telegraf, session } = require('telegraf');
 const config = require('./config');
@@ -7,33 +10,33 @@ const registerCommands = require('./handlers/commands');
 const registerActions = require('./handlers/actions');
 const registerEvents = require('./handlers/events');
 
-// Инициализация бота
+// Initialize the bot
 const bot = new Telegraf(config.telegramBotToken);
 
-// Используем сессии
+// Use session middleware
 bot.use(session());
 
-// Регистрируем обработчики команд и действий
+// Register command and action handlers
 registerCommands(bot);
 registerActions(bot);
 registerEvents(bot);
 
-// Обработчик ошибок
+// Error handling
 bot.catch((err) => {
-  logger.error(`❗ Произошла ошибка в боте: ${err.message}`);
+  logger.error(`Bot error: ${err.message}`);
 });
 
-// Запуск бота
+// Start the bot
 bot.launch().then(() => {
-  logger.log('🚀 Бот запущен');
+  logger.info('Bot launched successfully.');
 });
 
-// Грейсфул-шатдаун
+// Graceful shutdown
 process.once('SIGINT', () => {
-  logger.log('🛑 Получен SIGINT. Останавливаем бота.');
+  logger.info('Received SIGINT. Stopping bot.');
   bot.stop('SIGINT');
 });
 process.once('SIGTERM', () => {
-  logger.log('🛑 Получен SIGTERM. Останавливаем бота.');
+  logger.info('Received SIGTERM. Stopping bot.');
   bot.stop('SIGTERM');
 });

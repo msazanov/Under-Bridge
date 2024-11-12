@@ -1,24 +1,27 @@
-// repositories/db.js
+/**
+ * File: repositories/db.js
+ * Description: Database repository providing functions for interacting with PostgreSQL.
+ */
 
 const { Pool } = require('pg');
 const config = require('../config');
 const logger = require('../utils/logger');
 
 const pool = new Pool({
-  host: config.db.host,         // Хост базы данных
-  port: config.db.port,         // Порт базы данных
-  user: config.db.user,         // Имя пользователя
-  password: config.db.password, // Пароль пользователя
-  database: config.db.name,     // Имя базы данных
+  host: config.db.host,
+  port: config.db.port,
+  user: config.db.user,
+  password: config.db.password,
+  database: config.db.name,
 });
 
-// Обработка неожиданных ошибок подключения
+// Handle unexpected errors
 pool.on('error', (err) => {
   logger.error('Unexpected error on idle client', err);
   process.exit(-1);
 });
 
-// Функции для работы с пользователями
+// User functions
 const getUserByTelegramId = async (telegramId) => {
   const res = await pool.query('SELECT id, balance FROM users WHERE telegram_id = $1', [telegramId]);
   return res.rows[0];
@@ -32,7 +35,7 @@ const addUser = async (telegramId, firstName, lastName, username) => {
   return res.rows[0];
 };
 
-// Функции для работы с локалками
+// Local functions
 const getLocalsByOwnerId = async (ownerId) => {
   const res = await pool.query('SELECT id, name, ip_network FROM locals WHERE owner_id = $1', [ownerId]);
   return res.rows;
@@ -59,19 +62,19 @@ const addLocal = async (ownerId, name, ipNetwork) => {
 const deleteLocal = async (localId, ownerId) => {
   await pool.query('BEGIN');
   try {
-    // Проверяем принадлежность локалки
+    // Check ownership
     const res = await pool.query(
       'SELECT 1 FROM locals WHERE id = $1 AND owner_id = $2',
       [localId, ownerId]
     );
     if (res.rows.length === 0) {
-      throw new Error('Локалка не найдена или не принадлежит пользователю.');
+      throw new Error('Local not found or not owned by user.');
     }
 
-    // Удаляем пользователей в локалке
+    // Delete users in the local
     await pool.query('DELETE FROM local_users WHERE local_id = $1', [localId]);
 
-    // Удаляем саму локалку
+    // Delete the local
     await pool.query('DELETE FROM locals WHERE id = $1', [localId]);
 
     await pool.query('COMMIT');
@@ -81,7 +84,7 @@ const deleteLocal = async (localId, ownerId) => {
   }
 };
 
-// Функции для работы с пользователями локалки
+// Local user functions
 const getLocalUsers = async (localId) => {
   const res = await pool.query(
     'SELECT username, ip_address FROM local_users WHERE local_id = $1',
@@ -129,7 +132,6 @@ const isIpNetworkExists = async (ipNetwork) => {
   return res.rows.length > 0;
 };
 
-// Экспортируем все функции
 module.exports = {
   getUserByTelegramId,
   addUser,

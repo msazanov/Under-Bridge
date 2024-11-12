@@ -1,56 +1,56 @@
-// handlers/events.js
+/**
+ * File: handlers/events.js
+ * Description: Handles text events and other generic events for the Telegram bot.
+ */
 
 const { createLocal, createLocalUser } = require('../services/localService');
-const { showLocalOverview } = require('../services/menu');
 const logger = require('../utils/logger');
 
 function registerEvents(bot) {
   bot.on('text', async (ctx) => {
     const telegramId = ctx.from.id;
     const userText = ctx.message.text.trim();
-    logger.log(`[on:text] Пользователь ID: ${telegramId} ввел текст: "${userText}"`);
+    logger.info(`[on:text] User ID: ${telegramId} entered text: "${userText}"`);
 
     try {
       if (ctx.session.state === 'awaiting_local_name') {
         const localName = userText;
-        logger.log(`[on:text] Пользователь ID: ${telegramId} вводит название локалки: "${localName}"`);
+        logger.info(`[on:text] User ID: ${telegramId} is entering local name: "${localName}"`);
 
         await createLocal(ctx, localName, `🎉 Локалка "${localName}" успешно создана.`);
-        logger.log(`[on:text] Локалка "${localName}" создана.`);
+        logger.info(`[on:text] Local "${localName}" created.`);
 
-        // Удаляем сообщение пользователя
+        // Delete user's message
         try {
           await ctx.deleteMessage(ctx.message.message_id);
-          logger.log(`[on:text] Сообщение ID ${ctx.message.message_id} пользователя ID ${telegramId} удалено.`);
+          logger.info(`[on:text] Deleted message ID ${ctx.message.message_id} from user ID ${telegramId}.`);
         } catch (error) {
-          logger.error(`[on:text] Ошибка при удалении сообщения пользователя: ${error.message}`);
+          logger.error(`[on:text] Error deleting user message: ${error.message}`);
         }
 
-        // Сбрасываем состояние
         ctx.session.state = null;
-        logger.log(`[on:text] Состояние пользователя ID ${telegramId} сброшено.`);
+        logger.info(`[on:text] Session state reset for user ID ${telegramId}.`);
       } else if (ctx.session.state === 'awaiting_username') {
         const username = userText;
-        logger.log(`[on:text] Пользователь ID: ${telegramId} вводит имя пользователя: "${username}"`);
+        logger.info(`[on:text] User ID: ${telegramId} is entering username: "${username}"`);
 
         await createLocalUser(ctx, username, `🎉 Пользователь "${username}" успешно создан.`);
-        logger.log(`[on:text] Пользователь "${username}" создан в локалке.`);
+        logger.info(`[on:text] User "${username}" created in local.`);
 
-        // Удаляем сообщение пользователя
+        // Delete user's message
         try {
           await ctx.deleteMessage(ctx.message.message_id);
-          logger.log(`[on:text] Сообщение ID ${ctx.message.message_id} пользователя ID ${telegramId} удалено.`);
+          logger.info(`[on:text] Deleted message ID ${ctx.message.message_id} from user ID ${telegramId}.`);
         } catch (error) {
-          logger.error(`[on:text] Ошибка при удалении сообщения пользователя: ${error.message}`);
+          logger.error(`[on:text] Error deleting user message: ${error.message}`);
         }
 
-        // Сбрасываем состояние
         ctx.session.state = null;
         ctx.session.localId = null;
-        logger.log(`[on:text] Состояние пользователя ID ${telegramId} сброшено.`);
+        logger.info(`[on:text] Session state reset for user ID ${telegramId}.`);
       }
     } catch (error) {
-      logger.error(`[on:text] Ошибка: ${error.message}`);
+      logger.error(`[on:text] Error: ${error.message}`);
       await ctx.reply('❗ Произошла ошибка. Пожалуйста, попробуйте позже.');
     }
   });
