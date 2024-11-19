@@ -183,11 +183,14 @@ async function showLocalOverview(ctx, localId, motd = '') {
 
 🔽 *Выберите действие:*`;
 
-    const keyboard = Markup.inlineKeyboard([
-      [Markup.button.callback('➕ Создать пользователя', `add_user_${local.id}`)],
-      [Markup.button.callback('🗑️ Удалить локалку', `delete_local_${local.id}`)],
+    // Кнопка "Настройки пользователей" теперь всегда отображается
+    const keyboardButtons = [
+      [Markup.button.callback('⚙️ Настройки локалки', `local_settings_${local.id}`)],
+      [Markup.button.callback('👥 Настройки пользователей', `user_settings_${local.id}`)],
       [Markup.button.callback('🔙 Назад', 'my_locals')],
-    ]);
+    ];
+
+    const keyboard = Markup.inlineKeyboard(keyboardButtons);
 
     if (ctx.callbackQuery && ctx.callbackQuery.message) {
       await ctx.editMessageText(messageText, {
@@ -203,10 +206,11 @@ async function showLocalOverview(ctx, localId, motd = '') {
         { parse_mode: 'Markdown', ...keyboard }
       );
     } else {
-      await ctx.reply(messageText, {
+      const sentMessage = await ctx.reply(messageText, {
         parse_mode: 'Markdown',
         ...keyboard,
       });
+      ctx.session.mainMenuMessageId = sentMessage.message_id;
     }
   } catch (error) {
     logger.error(`[showLocalOverview] Error: ${error.message}`);

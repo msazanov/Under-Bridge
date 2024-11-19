@@ -32,3 +32,7 @@ old/
 
 # Кэш
 .cache/
+
+# pg
+db/
+db/PostgreSQL/docker-compose.yml
