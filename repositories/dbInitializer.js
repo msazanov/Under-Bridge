@@ -8,7 +8,7 @@ const logger = require('../utils/logger');
 
 async function initializeDatabase() {
   try {
-    // Create 'users' table
+    // Создаем таблицу 'users'
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -21,7 +21,7 @@ async function initializeDatabase() {
     `);
     logger.info("Checked 'users' table.");
 
-    // Create 'locals' table
+    // Создаем таблицу 'locals'
     await pool.query(`
       CREATE TABLE IF NOT EXISTS locals (
         id SERIAL PRIMARY KEY,
@@ -32,7 +32,7 @@ async function initializeDatabase() {
     `);
     logger.info("Checked 'locals' table.");
 
-    // Create 'local_users' table
+    // Создаем таблицу 'local_users'
     await pool.query(`
       CREATE TABLE IF NOT EXISTS local_users (
         id SERIAL PRIMARY KEY,
@@ -45,16 +45,25 @@ async function initializeDatabase() {
     `);
     logger.info("Checked 'local_users' table.");
 
-    // Add any additional table creation scripts here
+    // Создаем таблицу 'sessions'
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        key TEXT PRIMARY KEY,
+        data TEXT NOT NULL
+      );
+    `);
+    logger.info("Checked 'sessions' table.");
+
+    // Добавьте любые дополнительные скрипты создания таблиц здесь
 
     logger.info('Database initialization completed successfully.');
   } catch (error) {
     logger.error(`Database initialization error: ${error.message}`);
-    logger.error(error.stack); // Add this line to log the stack trace
+    logger.error(error.stack); // Логируем стек ошибки
     throw error;
   }
 }
 
 module.exports = {
-    initializeDatabase,
-  };
+  initializeDatabase,
+};

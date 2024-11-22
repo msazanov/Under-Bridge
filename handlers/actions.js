@@ -272,6 +272,7 @@ function registerActions(bot) {
       await ctx.reply('❗ Произошла ошибка. Пожалуйста, попробуйте позже.');
     }
   });
+
   // Обработчик для кнопки "Настройки пользователей"
   bot.action(/^user_settings_(\d+)$/, async (ctx) => {
     const localId = ctx.match[1];
