@@ -182,6 +182,7 @@ VPN Bridge Bot is a Telegram bot designed to create and manage virtual private n
 
 - **User Management**
   - [x] **Create User**
+  - [x] **Rename User**
   - [x] **Delete User**
 
 ### Upcoming Features
@@ -191,28 +192,19 @@ VPN Bridge Bot is a Telegram bot designed to create and manage virtual private n
   - [ ] **Port Policy**
   - [ ] **Visibility Policy**
   - [ ] **Rename Local**
-  - [ ] **Delete Local**
-  - [ ] **Back**
 
 - **User Settings**
   - For each user:
-    - [ ] **Rename User**
-    - [ ] **Delete User**
     - [ ] **Change Network Protocol**
     - **Port and Visibility Settings**
       - [ ] **Port Policy**
         - [ ] **All Ports Open**
         - [ ] **All Ports Closed**
         - [ ] **Open Specific Ports**
-        - [ ] **Back**
       - [ ] **Visibility Policy**
         - [ ] **All Users Can See Me**
         - [ ] **No One Can See Me**
         - [ ] **Only Specific Users Can See Me**
-        - [ ] **Back**
-    - [ ] **Back**
-  - [ ] **Create User**
-  - [ ] **Back**
 
 - **Payment System**
   - [ ] Design a payment system for premium features.

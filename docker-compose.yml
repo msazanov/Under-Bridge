@@ -1,7 +1,7 @@
 services:
   telegram-bot:
     build: .
-    container_name: telegram-vpn-bot
+    container_name: underbridge-tg
     restart: always
     env_file: 
       - .env
