@@ -1,14 +1,12 @@
 /**
- * File: handlers/commands.js
- * Description: Registers command handlers for the Telegram bot.
+ * File: handlers/commands/startCommand.js
+ * Description: Handles the /start command.
  */
 
-const { showMainMenu } = require('../services/menu');
-const logger = require('../utils/logger');
+const { showMainMenu } = require('../../services/menu');
+const logger = require('../../utils/logger');
 
-function registerCommands(bot) {
-  logger.debug('Registering command handlers.');
-  
+function registerStartCommand(bot) {
   bot.start(async (ctx) => {
     const telegramId = ctx.from.id;
     logger.info(`[Start] User ID: ${telegramId} invoked /start`);
@@ -24,4 +22,4 @@ function registerCommands(bot) {
   });
 }
 
-module.exports = registerCommands;
+module.exports = registerStartCommand;

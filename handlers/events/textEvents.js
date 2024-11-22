@@ -1,15 +1,15 @@
 /**
- * File: handlers/events.js
+ * File: handlers/events/textEvents.js
  * Description: Handles text events and other generic events for the Telegram bot.
  */
 
-const { createLocal, createLocalUser } = require('../services/localService');
-const { showLocalOverview } = require('../services/menu');
-const logger = require('../utils/logger');
-const db = require('../repositories/db');
+const { createLocal, createLocalUser } = require('../../services/localService');
+const { showLocalOverview } = require('../../services/menu');
+const logger = require('../../utils/logger');
+const db = require('../../repositories/db');
 const { Markup } = require('telegraf');
 
-function registerEvents(bot) {
+function registerTextEvents(bot) {
   bot.on('text', async (ctx) => {
     const telegramId = ctx.from.id;
     const userText = ctx.message.text.trim();
@@ -106,4 +106,4 @@ function registerEvents(bot) {
   });
 }
 
-module.exports = registerEvents;
+module.exports = registerTextEvents;

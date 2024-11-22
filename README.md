@@ -6,6 +6,7 @@
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
+- [Development Guide](#development-guide)
 - [To-Do List](#to-do-list)
 - [Contributing](#contributing)
 - [License](#license)
@@ -25,10 +26,11 @@ VPN Bridge Bot is a Telegram bot designed to create and manage virtual private n
 - **Local Creation**: Users can create new locals with custom or randomly generated names.
 - **User Management**: Add users to locals with custom or randomly generated usernames.
 - **Local Overview**: View details of locals, including IP networks and users within them.
+- **Persistent Context**: Automatically save user context in the database, ensuring seamless interaction even after bot restarts.
 - **Deletion**: Ability to delete locals and users with confirmation prompts.
-- **Session Management**: Utilizes session middleware for tracking user states.
 - **Error Handling**: Comprehensive error handling with informative messages.
 - **Logging**: Detailed logging using Winston for monitoring bot activities.
+- **Database-Driven State Management**: All session states and user interactions are stored in PostgreSQL for reliability and scalability.
 
 ---
 
@@ -36,7 +38,7 @@ VPN Bridge Bot is a Telegram bot designed to create and manage virtual private n
 
 ### Prerequisites
 
-- **Node.js**: Make sure you have Node.js (version 12 or higher) installed.
+- **Node.js**: Make sure you have Node.js (version 16 or higher) installed.
 - **PostgreSQL**: A PostgreSQL database for storing user and local information.
 - **Telegram Bot Token**: Obtain a bot token from [BotFather](https://t.me/BotFather) on Telegram.
 
@@ -72,7 +74,7 @@ VPN Bridge Bot is a Telegram bot designed to create and manage virtual private n
 
 4. **Initialize the Database**
 
-   Ensure your PostgreSQL server is running and execute the SQL scripts to create necessary tables. (SQL scripts are not included in this repository and need to be created based on the `db.js` file schema.)
+   Ensure your PostgreSQL server is running and execute the SQL scripts to create necessary tables. Tables are created automatically on the first run using the database initializer.
 
 5. **Run the Bot**
 
@@ -107,7 +109,62 @@ VPN Bridge Bot is a Telegram bot designed to create and manage virtual private n
 5. **Deleting Locals and Users**
 
    - Delete a local by selecting **Delete Local** and confirming the action.
-   - User deletion functionality will be added in future updates.
+   - Delete a user by selecting **Delete User** from user settings.
+
+---
+
+## Development Guide
+
+### Project Structure
+
+```plaintext
+.
+├── bot.js                # Main entry point for the bot
+├── config                # Configuration files and environment variables
+│   └── index.js
+├── handlers              # Command and action handlers
+│   ├── commands
+│   │   ├── helpCommand.js
+│   │   ├── index.js
+│   │   └── startCommand.js
+│   └── actions
+│       ├── adminActions.js
+│       ├── index.js
+│       ├── localActions.js
+│       └── userActions.js
+├── repositories          # Database interaction logic
+│   ├── db.js
+│   └── dbInitializer.js
+├── services              # Core business logic
+│   ├── localService.js
+│   └── menu.js
+├── utils                 # Utility functions and helpers
+│   ├── logger.js
+│   └── name-generator.js
+├── .env                  # Environment variables
+├── .gitignore            # Git ignore rules
+├── package.json          # Node.js dependencies and scripts
+├── README.md             # Documentation
+└── EXAMPLE.env           # Example environment file
+```
+
+### Key Design Choices
+
+1. **Modular Architecture**: 
+   - Handlers are divided into commands and actions for better organization.
+   - Each functionality is isolated into separate files, allowing for easy scaling and debugging.
+
+2. **Database-Driven State**:
+   - User sessions are stored in PostgreSQL for reliability across bot restarts.
+   - State transitions are managed efficiently using database updates.
+
+3. **Error Handling**:
+   - Comprehensive logging ensures that errors are traceable.
+   - User-friendly error messages are shown for smoother interaction.
+
+4. **Scalability**:
+   - Adding new commands or actions is simple due to the modular architecture.
+   - The bot can handle concurrent user interactions effectively.
 
 ---
 
@@ -125,6 +182,7 @@ VPN Bridge Bot is a Telegram bot designed to create and manage virtual private n
 
 - **User Management**
   - [x] **Create User**
+  - [x] **Delete User**
 
 ### Upcoming Features
 
