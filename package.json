@@ -1,7 +1,7 @@
 {
-  "name": "telegram-vpn-bot",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "UnderBridge-tg",
+  "version": "1.5.0",
+  "main": "bot.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
