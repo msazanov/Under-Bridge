@@ -3,7 +3,7 @@ name: Docker Build and Push
 on:
   push:
     branches:
-      - main # Укажите ветку, для которой запускается workflow
+      - main
 
 jobs:
   build-and-push:
@@ -14,16 +14,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Set version based on the latest Git tag or commit hash
-      - name: Set Image Version
-        id: vars
+      # Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22.11.0'
+
+      # Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # Bump version in package.json
+      - name: Bump version
         run: |
-          # Получаем последнюю версию из git тегов
-          TAG=$(git describe --tags --abbrev=0 || echo "v0.0.0")
-          # Увеличиваем версию на патч
-          VERSION=$(echo "$TAG" | awk -F. '{printf "v%d.%d.%d", $1, $2, $3+1}')
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "VERSION: $VERSION"
+          npm version patch --no-git-tag-version
+          git add package.json
+          git commit -m "chore: bump version to $(node -p "require('./package.json').version")"
+          echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
 
       # Log in to Docker Hub
       - name: Log in to Docker Hub
@@ -32,12 +39,12 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
 
-      # Build and push Docker image with version and latest tags
+      # Build and push Docker image
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/underbridge-tg:${{ env.VERSION }}
             ${{ secrets.DOCKER_USERNAME }}/underbridge-tg:latest
+            ${{ secrets.DOCKER_USERNAME }}/underbridge-tg:${{ env.VERSION }}

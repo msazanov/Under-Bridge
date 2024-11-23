@@ -6,6 +6,7 @@
 const { Markup } = require('telegraf');
 const db = require('../repositories/db');
 const logger = require('../utils/logger');
+const packageJson = require('../package.json');
 
 async function showMainMenu(ctx, setMainMenuMessageId = false) {
   const telegramId = ctx.from.id;
@@ -27,7 +28,8 @@ async function showMainMenu(ctx, setMainMenuMessageId = false) {
     const localsCount = locals.length;
     logger.info(`[showMainMenu] User ID ${user.id} has ${localsCount} locals.`);
 
-    const messageText = `✨ **Главное меню** ✨
+    const botVersion = packageJson.version;
+    const messageText = `🤖 **UnderBridge Bot v${botVersion}**
 
 💰 *Ваш текущий баланс:* ${user.balance} рублей
 📂 *Ваши локалки:* ${localsCount}
@@ -183,7 +185,6 @@ async function showLocalOverview(ctx, localId, motd = '') {
 
 🔽 *Выберите действие:*`;
 
-    // Кнопка "Настройки пользователей" теперь всегда отображается
     const keyboardButtons = [
       [Markup.button.callback('⚙️ Настройки локалки', `local_settings_${local.id}`)],
       [Markup.button.callback('👥 Настройки пользователей', `user_settings_${local.id}`)],
