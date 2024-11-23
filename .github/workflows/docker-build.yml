@@ -3,6 +3,9 @@ name: Docker Build and Push
 on:
   push:
     branches:
+      - main # Укажите ветку, для которой запускается workflow
+  pull_request:
+    branches:
       - main
 
 jobs:
@@ -14,23 +17,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Set up Node.js
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '22.11.0'
-
-      # Install dependencies
-      - name: Install dependencies
-        run: npm install
-
-      # Bump version in package.json
-      - name: Bump version
+      # Set Git configuration for version bump
+      - name: Configure Git
         run: |
-          npm version patch --no-git-tag-version
-          git add package.json
-          git commit -m "chore: bump version to $(node -p "require('./package.json').version")"
-          echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+
+      # Increment the version in package.json
+      - name: Increment version
+        run: npm version patch --no-git-tag-version
 
       # Log in to Docker Hub
       - name: Log in to Docker Hub
@@ -46,5 +41,14 @@ jobs:
           context: .
           push: true
           tags: |
+            ${{ secrets.DOCKER_USERNAME }}/underbridge-tg:${{ github.sha }}
             ${{ secrets.DOCKER_USERNAME }}/underbridge-tg:latest
-            ${{ secrets.DOCKER_USERNAME }}/underbridge-tg:${{ env.VERSION }}
+
+      # Commit the updated package.json back to the repository
+      - name: Commit updated package.json
+        run: |
+          git add package.json
+          git commit -m "Bump version to $(node -p "require('./package.json').version")"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
