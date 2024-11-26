@@ -3,10 +3,8 @@ name: Docker Build and Push
 on:
   push:
     branches:
-      - main # Укажите ветку, для которой запускается workflow
-  pull_request:
-    branches:
       - main
+      - dev
 
 jobs:
   build-and-push:
@@ -25,7 +23,12 @@ jobs:
 
       # Increment the version in package.json
       - name: Increment version
-        run: npm version patch --no-git-tag-version
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            npm version patch --no-git-tag-version
+          else
+            npm version prerelease --preid=dev --no-git-tag-version
+          fi
 
       # Extract the version from package.json
       - name: Get version from package.json
@@ -49,7 +52,7 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/underbridge-tg:${{ env.VERSION }}
-            ${{ secrets.DOCKER_USERNAME }}/underbridge-tg:latest
+            ${{ secrets.DOCKER_USERNAME }}/underbridge-tg:$(if [ "${{ github.ref_name }}" = "main" ]; then echo stable; else echo unstable; fi)
 
       # Commit the updated package.json back to the repository
       - name: Commit updated package.json
