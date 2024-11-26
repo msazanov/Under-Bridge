@@ -79,3 +79,4 @@ async function startBot() {
 // Start the bot
 startBot();
 
+// another testcommit
