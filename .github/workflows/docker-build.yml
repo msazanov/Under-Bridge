@@ -3,10 +3,8 @@ name: Docker Build and Push
 on:
   push:
     branches:
-      - main # Укажите ветку, для которой запускается workflow
-  pull_request:
-    branches:
       - main
+      - dev
 
 jobs:
   build-and-push:
@@ -32,7 +30,16 @@ jobs:
         id: get_version
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          echo "VERSION=$VERSION" >> $GITHUB_ENV    
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      # Define tag based on branch
+      - name: Define Docker Tag
+        id: define_tag
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "DOCKER_TAG=stable" >> $GITHUB_ENV
+          else
+            echo "DOCKER_TAG=unstable" >> $GITHUB_ENV
 
       # Log in to Docker Hub
       - name: Log in to Docker Hub
@@ -48,14 +55,5 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/underbridge-tg:${{ env.VERSION }}
-            ${{ secrets.DOCKER_USERNAME }}/underbridge-tg:latest
-
-      # Commit the updated package.json back to the repository
-      - name: Commit updated package.json
-        run: |
-          git add package.json
-          git commit -m "Bump version to ${VERSION}"
-          git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            ${{ secrets.DOCKER_USERNAME }}/underbridge-tg:${{ env.VERSION }}-${{ env.DOCKER_TAG }}
+            ${{ secrets.DOCKER_USERNAME }}/underbridge-tg:${{ env.DOCKER_TAG }}
