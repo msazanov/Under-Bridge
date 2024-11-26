@@ -25,15 +25,6 @@ jobs:
       - name: Increment version
         run: npm version patch --no-git-tag-version
 
-      # Commit the updated package.json
-      - name: Commit updated version
-        run: |
-          git add package.json
-          git commit -m "Bump version to $(node -p "require('./package.json').version")"
-          git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       # Extract the version from package.json
       - name: Get version from package.json
         id: get_version
@@ -67,3 +58,12 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/underbridge-tg:${{ env.VERSION }}-${{ env.DOCKER_TAG }}
             ${{ secrets.DOCKER_USERNAME }}/underbridge-tg:${{ env.DOCKER_TAG }}
+
+      # Commit the updated package.json back to the repository
+      - name: Commit updated package.json
+        run: |
+          git add package.json
+          git commit -m "Bump version to ${VERSION}"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
