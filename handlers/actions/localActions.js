@@ -148,6 +148,7 @@ function registerLocalActions(bot) {
       const messageText = `⚙️ **Настройки локалки "${local.name}"**`;
 
       const keyboard = Markup.inlineKeyboard([
+        [Markup.button.callback('✏️ Переименовать', `rename_local_${local.id}`)],
         [Markup.button.callback('🗑️ Удалить локалку', `delete_local_${local.id}`)],
         [Markup.button.callback('🔙 Назад', `local_${local.id}`)],
       ]);
@@ -164,6 +165,79 @@ function registerLocalActions(bot) {
     }
   });
 
+  // Обработчик для начала переименования локалки
+  bot.action(/^rename_local_(\d+)$/, async (ctx) => {
+    const localId = Number(ctx.match[1]);
+    const telegramId = ctx.from.id;
+    logger.info(`[Action: rename_local_${localId}] User ID: ${telegramId} requested to rename local ID ${localId}`);
+
+    // Проверим, что локалка принадлежит пользователю
+    const local = await db.getLocalByIdAndOwner(localId, telegramId);
+    if (!local) {
+      logger.info(`[Action: rename_local_${localId}] Local not found or access denied.`);
+      await ctx.answerCbQuery('❗ Локалка не найдена или вы не имеете к ней доступа.', { show_alert: true });
+      return;
+    }
+
+    ctx.session.renamingLocalId = localId;
+
+    const messageText = `✏️ **Переименование локалки "${local.name}"**
+
+Пожалуйста, введите новое имя локалки или нажмите "🔄 Пропустить", чтобы сгенерировать случайное имя.`;
+
+    const keyboard = Markup.inlineKeyboard([
+      [Markup.button.callback('🔄 Пропустить', 'generate_random_local_name')],
+      [Markup.button.callback('🔙 Назад', `local_settings_${localId}`)],
+    ]);
+
+    await ctx.editMessageText(messageText, {
+      parse_mode: 'Markdown',
+      ...keyboard,
+    });
+    logger.info(`[Action: rename_local_${localId}] Prompting user for new local name.`);
+  });
+
+  // Обработчик для генерации случайного имени при переименовании локалки
+  bot.action('generate_random_local_name', async (ctx) => {
+    const localId = ctx.session.renamingLocalId;
+    if (!localId) {
+      await ctx.answerCbQuery('Ошибка: неизвестный localId.', { show_alert: true });
+      return;
+    }
+
+    const randomName = haiku();
+    logger.info(`[Action: generate_random_local_name] Generated random name "${randomName}" for local ID ${localId}`);
+    await renameLocalAndRefresh(ctx, localId, randomName);
+  });
+
+  // Обработчик текстовых сообщений для переименования локалки
+  bot.on('text', async (ctx, next) => {
+    if (ctx.session.renamingLocalId) {
+      const localId = ctx.session.renamingLocalId;
+      const newName = ctx.message.text.trim();
+      if (!newName) {
+        await ctx.reply('❗ Имя не может быть пустым. Попробуйте снова.');
+        return;
+      }
+      await renameLocalAndRefresh(ctx, localId, newName);
+      return;
+    }
+    await next();
+  });
+
+  // Функция для переименования локалки и обновления обзора
+  async function renameLocalAndRefresh(ctx, localId, newName) {
+    try {
+      await db.updateLocalName(localId, newName);
+      delete ctx.session.renamingLocalId;
+      await showLocalOverview(ctx, localId, '✅ Локалка успешно переименована!\n\n');
+      logger.info(`[renameLocalAndRefresh] Local ID ${localId} renamed to "${newName}"`);
+    } catch (error) {
+      logger.error(`[renameLocalAndRefresh] Error: ${error.message}`);
+      await ctx.reply(`❗ Произошла ошибка при переименовании локалки: ${error.message}`);
+    }
+  }
+
   // Обработчик для кнопки "Назад"
   bot.action('back_to_main', async (ctx) => {
     const telegramId = ctx.from.id;
@@ -172,6 +246,7 @@ function registerLocalActions(bot) {
     try {
       ctx.session.state = null;
       ctx.session.currentLocalId = null;
+      ctx.session.renamingLocalId = null;
       logger.info(`[Action: back_to_main] Session state reset for user ID ${telegramId}`);
 
       await showMainMenu(ctx, false);
@@ -189,7 +264,7 @@ function registerLocalActions(bot) {
 
     try {
       await showMyLocals(ctx, true);
-      logger.info(`[Action: my_locals] Main menu sent to user ID ${telegramId}`);
+      logger.info(`[Action: my_locals] Locals list sent to user ID ${telegramId}`);
     } catch (error) {
       logger.error(`[Action: my_locals] Error: ${error.message}`);
       await ctx.reply('❗ Произошла ошибка. Пожалуйста, попробуйте позже.');

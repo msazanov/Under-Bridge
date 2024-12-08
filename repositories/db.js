@@ -110,6 +110,15 @@ const deleteLocal = async (localId, ownerId) => {
   }
 };
 
+const updateLocalName = async (localId, newName) => {
+  try {
+    await pool.query('UPDATE locals SET name = $1 WHERE id = $2', [newName, localId]);
+  } catch (error) {
+    logger.error(`Error in updateLocalName: ${error.message}`);
+    throw error;
+  }
+};
+
 // Local user functions
 const getLocalUsers = async (localId) => {
   try {
@@ -229,6 +238,7 @@ module.exports = {
   getLocalByIdAndOwner,
   addLocal,
   deleteLocal,
+  updateLocalName,
   getLocalUsers,
   addLocalUser,
   getUsedIPs,
